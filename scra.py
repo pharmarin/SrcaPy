@@ -3,6 +3,10 @@ import bs4
 import sys
 import os
 from bs4 import BeautifulSoup  # pip install bs4
+from requests_file import FileAdapter
+
+requests_session = requests.session()
+requests_session.mount('file://', FileAdapter())
 
 """
 Name: formatWish()
@@ -24,22 +28,20 @@ Return : All Media found : dict{Name:Link,...}
 
 
 # return dict{Name:Link,Name:Link,...}
-def search(searchName, mediaType='mangas'):
-    target = 'https://www.wawacity.blue/?search='+searchName+'&p='+mediaType
+def search(searchName, mediaType='mangas', page=1):
+    target = 'https://www.wawacity.blue/?search=' + \
+        searchName+'&p='+mediaType+'&page=' + \
+        str(page)+'&linkType=hasDownloadLink'
     _searchDict = {}
-    r = requests.get(target)
+    r = requests_session.get(target)
     if r.ok:
         soup = BeautifulSoup(r.text, "html.parser")
         for links in soup.find_all('div', {'class': 'wa-sub-block-title'}):
-            for a in links.a:
-                if type(a) == bs4.element.NavigableString and a != ' ':
-                    name = a
-                elif (type(a) == bs4.element.Tag and (' - VF' in a) or (' - VOSTFR' in a) or (' - VF HD' in a) or (' - VOSTFR HD' in a)):
-                    name = str(name) + str(a).replace('<i> ',
-                                                      ' ').replace('</i>', '')
-            for a in links.find_all('a'):
-                nameLink = 'https://www.wawacity.blue/' + a.get('href')
-            _searchDict[name] = nameLink
+            name = links.a.getText()
+            link = 'https://www.wawacity.blue/' + links.a.get('href')
+
+            _searchDict[name] = link
+
         return _searchDict
 
 
@@ -68,13 +70,21 @@ Return : Download links of our wish : list
 
 
 def getLink(target):  # return list(links,links,...)
-    _cleanLinks = []
-    r = requests.get(target)
+    _cleanLinks = {}
+    r = requests_session.get(target)
     if r.ok:
         soup = BeautifulSoup(r.text, "html.parser")
-        for _links in soup.find_all('a', {'class': 'link'}):
-            if 'Télécharger' in str(_links) and 'Lien 1:' in str(_links):
-                _cleanLinks.append(_links.get('href'))
+        rows = soup.find("table", {'id': "DDLLinks"}).find_all(
+            'tr', {'class': 'link-row'})
+        for row in rows:
+            cells = row.findAll("td")
+            linkSite = cells[1].getText()
+            if linkSite == "Anonyme":
+                continue
+            link = cells[0].find("a").get('href')
+            if _cleanLinks.get(linkSite) == None:
+                _cleanLinks[linkSite] = []
+            _cleanLinks[linkSite].append(link)
     return _cleanLinks
 
 
@@ -140,7 +150,7 @@ def outputFile(links, fileName='.htx'):
         quit()
 
 
-parameter = setup()
+""" parameter = setup()
 
 for x in outputFile(getLink(choose(search(formatWish(parameter[0]), parameter[1]))), parameter[3]):
-    print(x)
+    print(x) """

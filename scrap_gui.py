@@ -1,7 +1,7 @@
 import pyforms
-from pyforms import BaseWidget
+from pyforms.basewidget import BaseWidget
 from pyforms.controls import ControlButton, ControlCheckBoxList, ControlCombo, ControlText, ControlTextArea
-from scra import getLink, queryResults
+from scra import formatWish, getLink, search
 
 
 class ScrapperGUI(BaseWidget):
@@ -11,12 +11,14 @@ class ScrapperGUI(BaseWidget):
         self.title = "Scrapper"
 
         self.formset = [("name", "media"), "searchButton",
-                        "resultList", "scrapButton", " "]
+                        "resultList", "scrapButton", ("sitePicker", "resultButton"), " "]
         self.name = ControlText('')
         self.media = ControlCombo('')
         self.searchButton = ControlButton('Rechercher')
         self.resultList = ControlCheckBoxList('Résultats : ')
         self.scrapButton = ControlButton('Scrapper les liens')
+        self.sitePicker = ControlCombo('Choisir un site de téléchargement :')
+        self.resultButton = ControlButton('Copier')
         self.resultLinks = ControlTextArea('', geometry=(100, 100, 150, 150))
 
         self.media.add_item('Films', 'films')
@@ -28,11 +30,13 @@ class ScrapperGUI(BaseWidget):
         self.scrapButton.value = self.scrapMedia
         self.resultList.hide()
         self.scrapButton.hide()
-        self.resultLinks.title = "Résultat"
-        self.resultLinks.hide()
+        self.sitePicker.hide()
+        self.resultButton.hide()
 
     def searchMedia(self):
-        self._results = queryResults(self.name.value, self.media.value)
+        self._results = {}
+        self._results.update(search(
+            formatWish(self.name.value), self.media.value))
         self.resultList.value = self._results.keys()
         self.resultList.show()
         self.scrapButton.show()
@@ -41,10 +45,13 @@ class ScrapperGUI(BaseWidget):
         selectedIndex = self.resultList.selected_row_index
         selectedLink = list(self._results.values())[selectedIndex]
         scrappedLinks = getLink(selectedLink)
-        print(scrappedLinks)
-        for link in scrappedLinks:
-            self.resultLinks += link
-        self.resultLinks.show()
+
+        self.sitePicker.add_item("Tous")
+        for site in scrappedLinks.keys():
+            self.sitePicker.add_item(site)
+
+        self.sitePicker.show()
+        self.resultButton.show()
 
 
 if __name__ == '__main__':
