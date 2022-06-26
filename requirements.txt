@@ -2,3 +2,4 @@ autopep8
 bs4
 requests
 pyforms-gui
+pyperclip

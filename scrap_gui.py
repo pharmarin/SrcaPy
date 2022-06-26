@@ -1,6 +1,7 @@
 import pyforms
 from pyforms.basewidget import BaseWidget
 from pyforms.controls import ControlButton, ControlCheckBoxList, ControlCombo, ControlText, ControlTextArea
+import pyperclip
 from scra import formatWish, getLink, search
 
 
@@ -28,6 +29,8 @@ class ScrapperGUI(BaseWidget):
 
         self.searchButton.value = self.searchMedia
         self.scrapButton.value = self.scrapMedia
+        self.resultButton.value = self.copyLinks
+
         self.resultList.hide()
         self.scrapButton.hide()
         self.sitePicker.hide()
@@ -44,14 +47,24 @@ class ScrapperGUI(BaseWidget):
     def scrapMedia(self):
         selectedIndex = self.resultList.selected_row_index
         selectedLink = list(self._results.values())[selectedIndex]
-        scrappedLinks = getLink(selectedLink)
+        self._scrappedLinks = getLink(selectedLink)
 
         self.sitePicker.add_item("Tous")
-        for site in scrappedLinks.keys():
+        for site in self._scrappedLinks.keys():
             self.sitePicker.add_item(site)
 
         self.sitePicker.show()
         self.resultButton.show()
+
+    def copyLinks(self):
+        if self.sitePicker.value == "Tous":
+            allLinks = []
+            for site in self._scrappedLinks.values():
+                allLinks += site
+            pyperclip.copy("\n".join(allLinks))
+        else:
+            pyperclip.copy(
+                "\n".join(self._scrappedLinks[self.sitePicker.value]))
 
 
 if __name__ == '__main__':
